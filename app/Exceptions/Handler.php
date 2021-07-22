@@ -52,7 +52,6 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $exception)
     {  
-        dd($exception);
         $codigo = 500;
         $resposta = ['erro' => 'Ocorreu um erro no sistema.'];
         

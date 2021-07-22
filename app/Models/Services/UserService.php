@@ -103,9 +103,9 @@ class UserService
         try {
             $this->walletRepository->transfer($payer->wallet->id, $payee->wallet->id, $value);
             
-            DB::commit();
-
             $this->sendNotification($payee->email);
+            
+            DB::commit();
 
             return response()->json('Transferência realizada com sucesso.', 200);
         } catch(\Exception $e){
@@ -120,11 +120,13 @@ class UserService
 
     private function sendNotification($email)
     {   
-        $response = Http::get('http://o4d9z.mocklab.io/notify', [
-            'email' => $email,
-        ]);
-
-        return $response->successful();
+        try {
+            Http::get('http://o4d9z.mocklab.io/notify', [
+                'email' => $email,
+            ]);
+        } catch (\Exception $e) {
+            throw new BusinessException('Ops, não foi possível enviar a notificação.', 500);
+        }
     }
 
     public function consultBalance($id)
