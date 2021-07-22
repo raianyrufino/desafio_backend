@@ -9,7 +9,7 @@ Acesse a raiz do projeto `cd desafio_backend`;
 
 Baixe as dependências do projeto via composer:
 ```
-composer update
+composer install
 ```
 
 Configure o autoload
