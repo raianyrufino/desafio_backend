@@ -42,6 +42,12 @@ DB_DATABASE=
 DB_USERNAME=
 DB_PASSWORD=
 ```
+
+## Executar Limpeza de Cache
+```
+php artisan optimize
+```
+
 ## Executar Migrations
 ```
 php artisan migrate
