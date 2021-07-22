@@ -56,3 +56,40 @@ php artisan db:seed
 ```
 php artisan serve
 ```
+
+### Payload
+
+#### Criar Usuário
+POST /users
+
+```json
+{
+    "name" : "Ana",
+    "password" : "123123",
+    "email" : "ana@gmail.com",
+    "cpf_cnpj" : "12312312387",
+    "type" : "COMUM"
+}
+```
+
+#### Depositar
+POST /users/{id}/deposit
+
+```json
+{
+    "value" : 300.00,
+}
+```
+
+#### Transferir
+POST /users/{id}/transfer
+
+```json
+{
+    "payee_id" : 2,
+    "value" : 250.00
+}
+```
+
+#### Consultar saldo
+GET /users/{id}
