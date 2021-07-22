@@ -16,9 +16,9 @@ class WalletRepository extends BaseRepository
         $this->model->whereId($id)->increment('balance', $value);
     }
 
-    public function transfer($payer_wallet_id, $payee_wallet_id, $value) 
+    public function transfer($payer_id, $payee_id, $value) 
     {
-        $this->model->whereId($payer_wallet_id)->decrement('balance', $value);
-        $this->model->whereId($payee_wallet_id)->increment('balance', $value);
+        $this->model->whereUserId($payer_id)->decrement('balance', $value);
+        $this->model->whereUserId($payee_id)->increment('balance', $value);
     }
 }

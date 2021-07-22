@@ -6,6 +6,7 @@ use App\Models\Repositories\{UserRepository, WalletRepository};
 use App\Exceptions\BusinessException;
 use App\Models\Enums\UserType;
 use DB;
+use Illuminate\Support\Facades\Http;
 
 class UserService
 {
@@ -20,6 +21,8 @@ class UserService
         DB::beginTransaction();
 
         try {
+            $data['password'] = bcrypt($data['password']);
+
             $user = $this->repository->store($data);
                 
             $wallet = [
@@ -73,7 +76,7 @@ class UserService
         if ($payer_id == $payee_id) {
             throw new BusinessException('Não é possível realizar uma transferência para você mesmo.', 406);
         }
-
+        
         $payer = $this->repository->findBy('id', $payer_id);
         $payee = $this->repository->findBy('id', $payee_id);
         
@@ -85,8 +88,14 @@ class UserService
             throw new BusinessException('Apenas usuários comuns podem realizar transferências.', 406);
         }
 
-        if ($this->consultBalance($payer_id) < $value) {
+        if ($payer->wallet->balance < $value) {
             throw new BusinessException('Saldo insuficiente para realizar transferência.', 406);
+        }
+
+        $response = Http::get('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6')->object();
+
+        if ($response->message != 'Autorizado') {
+            throw new BusinessException('Você não possui autorização para realizar transferência.', 406);
         }
 
         DB::beginTransaction();
@@ -95,6 +104,8 @@ class UserService
             $this->walletRepository->transfer($payer->wallet->id, $payee->wallet->id, $value);
             
             DB::commit();
+
+            $this->sendNotification($payee->email);
 
             return response()->json('Transferência realizada com sucesso.', 200);
         } catch(\Exception $e){
@@ -105,6 +116,15 @@ class UserService
 
             return response()->json($resposta, $codigo);
         }
+    }
+
+    private function sendNotification($email)
+    {   
+        $response = Http::get('http://o4d9z.mocklab.io/notify', [
+            'email' => $email,
+        ]);
+
+        return $response->successful();
     }
 
     public function consultBalance($id)
