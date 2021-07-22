@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::post('users', 'App\Http\Controllers\UserController@store');
+Route::post('users/{id}/deposit', 'App\Http\Controllers\UserController@deposit');
+Route::post('users/{id}/transfer', 'App\Http\Controllers\UserController@transfer');
+Route::get('users/{id}', 'App\Http\Controllers\UserController@balance');
