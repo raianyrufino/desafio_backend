@@ -52,6 +52,11 @@ php artisan migrate
 php artisan db:seed 
 ```
 
+## Executar Testes
+```
+php artisan test
+```
+
 ## Executar Aplicação
 ```
 php artisan serve

@@ -15,7 +15,7 @@ class DepositRequest extends BaseRequest
     public function rules()
     {
         return [
-            'value' => 'required'
+            'value' => 'required|regex:/^\d*(\.\d{2})?$/'
         ];
     }
 
@@ -23,6 +23,7 @@ class DepositRequest extends BaseRequest
     {
         return [
             'value.required' => 'O campo Valor é obrigatório',
+            'value.regex' => 'O campo Valor deve ser válido para depósito.'
         ];
     }
 }

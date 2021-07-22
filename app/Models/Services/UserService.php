@@ -3,17 +3,23 @@
 namespace App\Models\Services;
 
 use App\Models\Repositories\{UserRepository, WalletRepository};
+use App\Models\Services\{NotificationService, AuthorizationService};
 use App\Exceptions\BusinessException;
 use App\Models\Enums\UserType;
 use DB;
-use Illuminate\Support\Facades\Http;
 
 class UserService
 {
-    public function __construct(UserRepository $repository, WalletRepository $walletRepository)
-    {
+    public function __construct(
+        UserRepository $repository, 
+        WalletRepository $walletRepository, 
+        NotificationService $notificationService, 
+        AuthorizationService $authorizationService
+    ) {
         $this->repository = $repository;
         $this->walletRepository = $walletRepository;
+        $this->notificationService = $notificationService;
+        $this->authorizationService = $authorizationService;
     }
 
     public function store($data)
@@ -24,7 +30,7 @@ class UserService
             $data['password'] = bcrypt($data['password']);
 
             $user = $this->repository->store($data);
-                
+            
             $wallet = [
                 'balance' => 0.00, 
                 'user_id' => $user->id
@@ -34,14 +40,11 @@ class UserService
             
             DB::commit();
 
-            return response()->json('Usuário criado com sucesso', 201);
+            return 'Usuário criado com sucesso';
         } catch(\Exception $e){
             DB::rollback();
             
-            $codigo = $e->getCode();
-            $resposta = ['erro' => $e->getMessage()];
-
-            return response()->json($resposta, $codigo);
+            throw new BusinessException($e->getMessage(), $e->getCode());
         }
     }   
 
@@ -60,14 +63,11 @@ class UserService
             
             DB::commit();
 
-            return response()->json('Depósito realizado com sucesso.', 200);
+            return 'Depósito realizado com sucesso.';
         } catch(\Exception $e){
             DB::rollback();
             
-            $codigo = $e->getCode();
-            $resposta = ['erro' => $e->getMessage()];
-
-            return response()->json($resposta, $codigo);
+            throw new BusinessException($e->getMessage(), $e->getCode());
         }    
     }
 
@@ -79,7 +79,7 @@ class UserService
         
         $payer = $this->repository->findBy('id', $payer_id);
         $payee = $this->repository->findBy('id', $payee_id);
-        
+
         if (!$payer || !$payee) {
             throw new BusinessException('Usuário informado não encontrado.', 404);
         }
@@ -92,44 +92,29 @@ class UserService
             throw new BusinessException('Saldo insuficiente para realizar transferência.', 422);
         }
 
-        $response = Http::get('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6')->object();
-
-        if ($response->message != 'Autorizado') {
+        $autorization_message = $this->authorizationService->get();
+        
+        if ($autorization_message != 'Autorizado') {
             throw new BusinessException('Você não possui autorização para realizar transferência.', 401);
         }
 
         DB::beginTransaction();
-
         try {
             $this->walletRepository->transfer($payer->wallet->id, $payee->wallet->id, $value);
             
-            $this->sendNotification($payee->email);
+            $this->notificationService->send($payee->email);
             
             DB::commit();
 
-            return response()->json('Transferência realizada com sucesso.', 200);
+            return 'Transferência realizada com sucesso.';
         } catch(\Exception $e){
             DB::rollback();
             
-            $codigo = $e->getCode();
-            $resposta = ['erro' => $e->getMessage()];
-
-            return response()->json($resposta, $codigo);
+            throw new BusinessException($e->getMessage(), $e->getCode());
         }
     }
 
-    private function sendNotification($email)
-    {   
-        try {
-            Http::get('http://o4d9z.mocklab.io/notify', [
-                'email' => $email,
-            ]);
-        } catch (\Exception $e) {
-            throw new BusinessException('Ops, não foi possível enviar a notificação.', 503);
-        }
-    }
-
-    public function consultBalance($id)
+    public function balance($id)
     {
         $user = $this->repository->findBy('id', $id);
         
@@ -137,6 +122,6 @@ class UserService
             throw new BusinessException('Usuário informado não encontrado.', 404);
         }
 
-        return response()->json($user->wallet->balance, 200);
+        return $user->wallet->balance;
     }
 }

@@ -17,4 +17,4 @@ use Illuminate\Support\Facades\Route;
 Route::post('users', 'App\Http\Controllers\UserController@store');
 Route::post('users/{id}/deposit', 'App\Http\Controllers\UserController@deposit');
 Route::post('users/{id}/transfer', 'App\Http\Controllers\UserController@transfer');
-Route::get('users/{id}', 'App\Http\Controllers\UserController@consultBalance');
+Route::get('users/{id}', 'App\Http\Controllers\UserController@balance');

@@ -15,7 +15,7 @@ class TransferRequest extends BaseRequest
     public function rules()
     {
         return [
-            'value' => 'required',
+            'value' => 'required|regex:/^\d*(\.\d{2})?$/',
             'payee_id' => 'required'
         ];
     }
@@ -24,6 +24,7 @@ class TransferRequest extends BaseRequest
     {
         return [
             'value.required' => 'O campo Valor é obrigatório',
+            'value.regex' => 'O campo Valor deve ser válido para depósito.',
             'payee_id.required' => 'Você deve informar para quem está transferindo.'
         ];
     }

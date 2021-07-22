@@ -15,21 +15,29 @@ class UserController extends Controller
 
     public function store(CreateRequest $request)
     {
-        return $this->service->store($request->all());
+        $answer = $this->service->store($request->all());
+
+        return response()->json($answer, 201);
     }  
     
     public function deposit($id, DepositRequest $request)
     {
-        return $this->service->deposit($id, $request->value);
+        $answer = $this->service->deposit($id, $request->value);
+
+        return response()->json($answer, 200);
     }  
 
     public function transfer($id, TransferRequest $request)
     {
-        return $this->service->transfer($id, $request->payee_id, $request->value);
+        $answer = $this->service->transfer($id, $request->payee_id, $request->value);
+
+        return response()->json($answer, 200);
     }  
 
-    public function consultBalance($id)
+    public function balance($id)
     {
-        return $this->service->consultBalance($id);
+        $answer = $this->service->balance($id);
+
+        return response()->json($answer, 200);
     }  
 }
