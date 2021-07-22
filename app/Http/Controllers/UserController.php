@@ -30,8 +30,6 @@ class UserController extends Controller
 
     public function consultBalance($id)
     {
-        $answer = $this->service->consultBalance($id);
-
-        return response()->json($answer, 200);
+        return $this->service->consultBalance($id);
     }  
 }

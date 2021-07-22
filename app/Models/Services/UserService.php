@@ -34,7 +34,7 @@ class UserService
             
             DB::commit();
 
-            return response()->json('Usuário criado com sucesso', 200);
+            return response()->json('Usuário criado com sucesso', 201);
         } catch(\Exception $e){
             DB::rollback();
             
@@ -74,7 +74,7 @@ class UserService
     public function transfer($payer_id, $payee_id, $value)
     {
         if ($payer_id == $payee_id) {
-            throw new BusinessException('Não é possível realizar uma transferência para você mesmo.', 406);
+            throw new BusinessException('Não é possível realizar uma transferência para você mesmo.', 422);
         }
         
         $payer = $this->repository->findBy('id', $payer_id);
@@ -85,17 +85,17 @@ class UserService
         }
 
         if ($payer->type != UserType::COMUM) {
-            throw new BusinessException('Apenas usuários comuns podem realizar transferências.', 406);
+            throw new BusinessException('Apenas usuários comuns podem realizar transferências.', 403);
         }
 
         if ($payer->wallet->balance < $value) {
-            throw new BusinessException('Saldo insuficiente para realizar transferência.', 406);
+            throw new BusinessException('Saldo insuficiente para realizar transferência.', 422);
         }
 
         $response = Http::get('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6')->object();
 
         if ($response->message != 'Autorizado') {
-            throw new BusinessException('Você não possui autorização para realizar transferência.', 406);
+            throw new BusinessException('Você não possui autorização para realizar transferência.', 401);
         }
 
         DB::beginTransaction();
@@ -125,7 +125,7 @@ class UserService
                 'email' => $email,
             ]);
         } catch (\Exception $e) {
-            throw new BusinessException('Ops, não foi possível enviar a notificação.', 500);
+            throw new BusinessException('Ops, não foi possível enviar a notificação.', 503);
         }
     }
 
@@ -137,6 +137,6 @@ class UserService
             throw new BusinessException('Usuário informado não encontrado.', 404);
         }
 
-        return $user->wallet->balance;
+        return response()->json($user->wallet->balance, 200);
     }
 }
