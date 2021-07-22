@@ -16,9 +16,9 @@ class CreateWalletsTable extends Migration
         Schema::create('wallets', function (Blueprint $table) {
             $table->id();
             $table->double('balance');
-            $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('CASCADE');
             $table->unsignedBigInteger('user_id')->nullable();
+            $table->timestamps();
         });
     }
 

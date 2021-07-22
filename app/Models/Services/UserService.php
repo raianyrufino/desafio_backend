@@ -5,44 +5,67 @@ namespace App\Models\Services;
 use App\Models\Repositories\{UserRepository, WalletRepository};
 use App\Exceptions\BusinessException;
 use App\Models\Enums\UserType;
+use DB;
 
 class UserService
 {
-    public function __construct(UserRepository $userRepository, WalletRepository $walletRepository)
+    public function __construct(UserRepository $repository, WalletRepository $walletRepository)
     {
-        $this->userRepository = $userRepository;
+        $this->repository = $repository;
         $this->walletRepository = $walletRepository;
     }
 
     public function store($data)
     {
-        $cpf_cnpj = $data['cpf_cnpj'];
-        $email = $data['email'];
+        DB::beginTransaction();
 
-        $user_found = $this->userRepository->findExistence($cpf_cnpj, $email);
+        try {
+            $user = $this->repository->store($data);
+                
+            $wallet = [
+                'balance' => 0.00, 
+                'user_id' => $user->id
+            ];
 
-        if ($user_found) {
-            throw new BusinessException('Usuário com CPF/CNPJ ou E-mail informados já cadastrado.', 409);
+            $this->walletRepository->store($wallet);
+            
+            DB::commit();
+
+            return response()->json('Usuário criado com sucesso', 200);
+        } catch(\Exception $e){
+            DB::rollback();
+            
+            $codigo = $e->getCode();
+            $resposta = ['erro' => $e->getMessage()];
+
+            return response()->json($resposta, $codigo);
         }
-
-        $user = $this->userRepository->store($data);
-        
-        $this->walletRepository->store(['balance' => 0.00, 'user_id' => $user->id]);
-
-        return $user;
     }   
 
     public function deposit($id, $value)
     {
-        $user_found = $this->userRepository->findBy('id', $id);
+        DB::beginTransaction();
 
-        if (!$user_found) {
-            throw new BusinessException('Usuário informado não encontrado.', 404);
-        }
-        
-        $this->walletRepository->deposit($user_found->wallet->id, $value);
+        try {
+            $user = $this->repository->findBy('id', $id);
 
-        return 'Depósito realizado com sucesso';
+            if (!$user) {
+                throw new BusinessException('Usuário informado não encontrado.', 404);
+            }
+
+            $this->walletRepository->deposit($user->wallet->id, $value);
+            
+            DB::commit();
+
+            return response()->json('Depósito realizado com sucesso.', 200);
+        } catch(\Exception $e){
+            DB::rollback();
+            
+            $codigo = $e->getCode();
+            $resposta = ['erro' => $e->getMessage()];
+
+            return response()->json($resposta, $codigo);
+        }    
     }
 
     public function transfer($payer_id, $payee_id, $value)
@@ -51,8 +74,8 @@ class UserService
             throw new BusinessException('Não é possível realizar uma transferência para você mesmo.', 406);
         }
 
-        $payer = $this->userRepository->findBy('id', $payer_id);
-        $payee = $this->userRepository->findBy('id', $payee_id);
+        $payer = $this->repository->findBy('id', $payer_id);
+        $payee = $this->repository->findBy('id', $payee_id);
         
         if (!$payer || !$payee) {
             throw new BusinessException('Usuário informado não encontrado.', 404);
@@ -66,23 +89,32 @@ class UserService
             throw new BusinessException('Saldo insuficiente para realizar transferência.', 406);
         }
 
-        $this->walletRepository->transfer($payer->wallet->id, $payee->wallet->id, $value);
+        DB::beginTransaction();
 
-        return 'Transferência realizada com sucesso';
+        try {
+            $this->walletRepository->transfer($payer->wallet->id, $payee->wallet->id, $value);
+            
+            DB::commit();
+
+            return response()->json('Transferência realizada com sucesso.', 200);
+        } catch(\Exception $e){
+            DB::rollback();
+            
+            $codigo = $e->getCode();
+            $resposta = ['erro' => $e->getMessage()];
+
+            return response()->json($resposta, $codigo);
+        }
     }
 
     public function consultBalance($id)
     {
-        $user_found = $this->userRepository->findBy('id', $id);
+        $user = $this->repository->findBy('id', $id);
         
-        if (!$user_found) {
+        if (!$user) {
             throw new BusinessException('Usuário informado não encontrado.', 404);
         }
 
-        return $user_found->wallet->balance;
+        return $user->wallet->balance;
     }
 }
-
-
-
-
